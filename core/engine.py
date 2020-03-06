@@ -13,6 +13,8 @@ class BackupEngine(object):
     def __init__(self, account, web_brower='chrome', save_dir='./results'):
 
         self.base_url = 'https://user.qzone.qq.com'
+
+        # Album config
         self.album_list_xpath = '//*[@id="js-album-list-noraml"]/div/div/ul/li'
         self.album_xpath = '//*[@id="js-album-list-noraml"]/div/div/ul/li[{}]/div/div[2]/div/div[2]/a'
         self.image_list_xpath = '//*[@id="js-module-container"]/div[1]/div[3]/div[1]/ul/li'
@@ -23,6 +25,10 @@ class BackupEngine(object):
         self.image_upload_time_xpath = '//*[@id="_slideView_userinfo"]/div/div/p'
         self.image_comments_xpath = '//*[@id="js-comment-module"]/div/div/div/ul/li'
         self.close_image_within_album_xpath = '//*[@id="js-viewer-main"]/div[1]/a'
+
+        # Post config
+        self.post_list_xpath = '//*[@id="msgList"]/li'
+        
 
         self.account = account
         self.web_brower = web_brower
@@ -40,6 +46,7 @@ class BackupEngine(object):
         hl.click(account)
         # Get web driver
         self.driver = hl.get_driver()
+        # self.driver.set_window_size(1200, 833)
         self.driver_frame = 'default'
         time.sleep(3)
 
@@ -168,4 +175,41 @@ class BackupEngine(object):
 
 
     def download_posts(self):
+
+        save_dir = osp.join(self.root_dir, "说说")
+        if not osp.exists(save_dir):
+            os.makedirs(save_dir)
+
+        hl.click("说说")
+        time.sleep(15)
+        self.switch_to_frame('app_canvas_frame')
+        
+        # NOTE it's weak for the judgement of post ending
+        last_page_last_post = ''
+        while True:
+            current_page_posts = ''
+            post_elems = self.driver.find_elements_by_xpath(self.post_list_xpath)
+            for post_elem in post_elems:
+                post = post_elem.text
+                post = '\n'.join(post.split('\n')[:-1])
+                current_page_posts += post
+                current_page_posts += '\n' * 3
+            current_page_last_post = post_elems[-1].text
+            if current_page_last_post == last_page_last_post:
+                break
+            
+            # save to file
+            with open(osp.join(save_dir, 'post.txt'), 'a') as a_obj:
+                a_obj.write(current_page_posts)
+
+            # update
+            last_page_last_post = current_page_last_post
+            # move to next page
+            hl.click("下一页")
+            time.sleep(10)
+
+    def download_leaving_message(self):
+        pass
+
+    def download_paper(self):
         pass

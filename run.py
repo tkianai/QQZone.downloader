@@ -22,6 +22,7 @@ def main():
     args = parse_args()
     engine = BackupEngine(args.account, save_dir=args.save)
     engine.download_images()
+    engine.download_posts()
     engine.finished()
 
 
