@@ -25,8 +25,8 @@ Tool for downloading images, posts from qq zone
 ## Todo lists
 
 - [x] Fix bugs when album is hidden by advertisment or un-clickable
-- [ ] Optimize runing efficiency, change explicit waiting to implicit waiting
-- [ ] Add new features, for example downloading image with upload time, comments and downloading posts
+- [ ] Optimize runing efficiency, change forcive waiting to implicit waiting
+- [ ] Add new features, such as downloading image with upload time, comments and downloading posts
 - [ ] Build gui
 - [ ] ...
 

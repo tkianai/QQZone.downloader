@@ -20,6 +20,8 @@ class BackupEngine(object):
         self.image_name_xpath = '//*[@id="js-photo-name"]'
         self.image_src_xpath = '//*[@id="js-img-border"]/img'
         self.next_image_xpath = '//*[@id="js-btn-nextPhoto"]'
+        self.image_upload_time_xpath = '//*[@id="_slideView_userinfo"]/div/div/p'
+        self.image_comments_xpath = '//*[@id="js-comment-module"]/div/div/div/ul/li'
         self.close_image_within_album_xpath = '//*[@id="js-viewer-main"]/div[1]/a'
 
         self.account = account
@@ -58,7 +60,7 @@ class BackupEngine(object):
         self.driver_frame = frame_name
 
 
-    def download_images(self, with_time=False, with_comment=False):
+    def download_images(self, with_time=True, with_comment=True):
         """back up images from qq zone
         
         Keyword Arguments:
@@ -120,8 +122,8 @@ class BackupEngine(object):
                 
                 upload_time = ''
                 if with_time:
-                    # TODO complete this
-                    pass
+                    upload_time_elem = self.driver.find_element_by_xpath(self.image_upload_time_xpath)
+                    upload_time = upload_time_elem.text
 
                 # Find image name
                 name_elem = self.driver.find_element_by_xpath(self.image_name_xpath)
@@ -133,8 +135,16 @@ class BackupEngine(object):
                 self.save_file(image_url, osp.join(save_dir, upload_time + '_' + image_name + '.jpg'))
 
                 if with_comment:
-                    # TODO complete this
-                    pass
+                    comment_elems = self.driver.find_elements_by_xpath(self.image_comments_xpath)
+                    if len(comment_elems) > 0:
+                        comments = ""
+                        for com_elem in comment_elems:
+                            comments += com_elem.text
+                            comments += '\n'
+                        
+                        # save to file
+                        with open(osp.join(save_dir, upload_time + '_' + image_name + '.txt'), 'w') as w_obj:
+                            w_obj.write(comments)
 
                 # Process next image
                 j += 1
