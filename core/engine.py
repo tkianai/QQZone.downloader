@@ -4,6 +4,8 @@ import os.path as osp
 import requests
 import helium as hl
 import time
+import selenium
+from tqdm import tqdm
 
 
 class BackupEngine(object):
@@ -37,7 +39,7 @@ class BackupEngine(object):
         # Get web driver
         self.driver = hl.get_driver()
         self.driver_frame = 'default'
-
+        time.sleep(3)
 
     def save_file(self, url, path):
         if osp.isfile(path):
@@ -84,9 +86,18 @@ class BackupEngine(object):
                 os.makedirs(save_dir)
             print("Downloading album: {}".format(title))
 
-            # TODO handle the element is hidden
+            # NOTE handle the element is hidden
             # Enter album
-            hl.click(album_elem)
+            enter_success = False
+            trial_times = 0
+            while (not enter_success) and (trial_times <= 15):
+                try:
+                    hl.click(album_elem)
+                    enter_success = True
+                except :
+                    hl.scroll_down(10)
+                    print("scrolling down...")
+                    trial_times += 1
             time.sleep(5)
 
             image_elems = self.driver.find_elements_by_xpath(self.image_list_xpath)
@@ -95,6 +106,7 @@ class BackupEngine(object):
 
             # Start from the first image
             j = 1 
+            pbar = tqdm(total=image_num)
             while j <= image_num:
                 if j == 1:
                     # Find the first image
@@ -126,6 +138,7 @@ class BackupEngine(object):
 
                 # Process next image
                 j += 1
+                pbar.update(1)
                 if j <= image_num:
                     # Visualize button(next)
                     hl.hover(src_elem)
