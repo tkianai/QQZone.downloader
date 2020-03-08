@@ -28,8 +28,8 @@ Tool for downloading images, posts from qq zone
 - [x] Optimize runing efficiency, change forcive waiting to explicit waiting
 - [x] Add new features, such as downloading image with upload time, comments and downloading posts
 - [ ] Add function for leaving message and paper(diary)
-- [ ] Build gui
-- [ ] ...
+- [x] Build gui
+- [ ] Build exe
 
 
 ## Acknowledgement
