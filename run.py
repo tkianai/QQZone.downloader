@@ -20,10 +20,14 @@ def parse_args():
 
 def main():
     args = parse_args()
-    engine = BackupEngine(args.account, save_dir=args.save)
-    engine.download_images()
-    engine.download_posts()
-    engine.finished()
+    engine = BackupEngine(args.account, save_dir=args.save, headless=False)
+    try:
+        engine.download_images()
+        engine.download_posts()
+    except Exception as e:
+        print(e)
+    finally:
+        engine.finished()
 
 
 if __name__ == "__main__":

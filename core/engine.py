@@ -6,6 +6,11 @@ import helium as hl
 import time
 import selenium
 from tqdm import tqdm
+import warnings
+import json
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 
 class BackupEngine(object):
@@ -46,9 +51,45 @@ class BackupEngine(object):
         hl.click(account)
         # Get web driver
         self.driver = hl.get_driver()
-        # self.driver.set_window_size(1200, 833)
+        self.driver.set_window_size(1200, 833)
         self.driver_frame = 'default'
-        time.sleep(3)
+        self.waits_until(
+            ['相册', '说说', '留言板', '日志'],
+            [hl.Link for _ in range(4)]
+        )
+
+    
+    def waits_until(self, names, elem_types, timeout_secs=10, interval_secs=0.5):
+        if not isinstance(names, (list, tuple)):
+            names = [names]
+        if not isinstance(elem_types, (list, tuple)):
+            elem_types = [elem_types]
+        for name, elem_type in zip(names, elem_types):
+            hl.wait_until(elem_type(name).exists, timeout_secs=timeout_secs, interval_secs=interval_secs)
+
+
+    def wait_until_by_attr(self, name, attr='xpath', timeout_secs=10, interval_secs=1):
+        filter_fn = None
+        if attr == 'id':
+            filter_fn = By.ID
+        elif attr == 'xpath':
+            filter_fn = By.XPATH
+        
+        element = WebDriverWait(self.driver, timeout_secs, poll_frequency=interval_secs).until(
+            EC.presence_of_element_located((filter_fn, name))
+        )
+        return element
+
+
+    def click(self, elem, robust=True):
+        hl.click(elem)
+        if robust:
+            time.sleep(1)
+
+
+    def finished(self):
+        hl.kill_browser()
+
 
     def save_file(self, url, path):
         if osp.isfile(path):
@@ -75,8 +116,9 @@ class BackupEngine(object):
             with_comment {bool} -- saving with the comments of the image (default: {False})
         """        
         hl.click("相册")
-        time.sleep(15)
-        self.switch_to_frame('app_canvas_frame')
+        iframe_elem = self.wait_until_by_attr('tphoto', attr='id')
+        self.switch_to_frame(iframe_elem.get_attribute('name'))
+        self.wait_until_by_attr(self.album_list_xpath)
         album_elems = self.driver.find_elements_by_xpath(self.album_list_xpath)
         album_num = len(album_elems)
         print("There are {} albums to be downloaded!".format(album_num))
@@ -86,9 +128,9 @@ class BackupEngine(object):
             # return to album list page
             if i != 1:
                 hl.click("相册")
-                time.sleep(15)
             album_xpath = self.album_xpath.format(i)
-            album_elem = self.driver.find_element_by_xpath(album_xpath)
+            album_elem = self.wait_until_by_attr(album_xpath)
+            # album_elem = self.driver.find_element_by_xpath(album_xpath)
             title = album_elem.get_attribute('title')
             save_dir = osp.join(self.root_dir, "相册", title)
             if not osp.exists(save_dir):
@@ -107,44 +149,46 @@ class BackupEngine(object):
                     hl.scroll_down(10)
                     print("scrolling down...")
                     trial_times += 1
-            time.sleep(5)
-
+            # time.sleep(5)
+            self.wait_until_by_attr(self.image_list_xpath)
             image_elems = self.driver.find_elements_by_xpath(self.image_list_xpath)
             image_num = len(image_elems)
             print("There are {} images in {} album".format(image_num, title))
 
             # Start from the first image
+            crawled_data = {}
             j = 1 
             pbar = tqdm(total=image_num)
             while j <= image_num:
                 if j == 1:
                     # Find the first image
                     image_xpath = self.image_xpath.format(j)
-                    image_elem = self.driver.find_element_by_xpath(image_xpath)
+                    # image_elem = self.driver.find_element_by_xpath(image_xpath)
+                    image_elem = self.wait_until_by_attr(image_xpath)
                     hl.click(image_elem)
-                    time.sleep(5)
+                    time.sleep(2)
 
                     # Change driver frame
                     self.switch_to_frame('default')
                 
                 upload_time = ''
                 if with_time:
-                    upload_time_elem = self.driver.find_element_by_xpath(self.image_upload_time_xpath)
+                    upload_time_elem = self.wait_until_by_attr(self.image_upload_time_xpath)
                     upload_time = upload_time_elem.text
 
                 # Find image name
-                name_elem = self.driver.find_element_by_xpath(self.image_name_xpath)
+                name_elem = self.wait_until_by_attr(self.image_name_xpath)
                 image_name = name_elem.get_attribute('innerHTML')
                 # Find image url
-                src_elem = self.driver.find_element_by_xpath(self.image_src_xpath)
+                src_elem = self.wait_until_by_attr(self.image_src_xpath)
                 image_url = src_elem.get_attribute('src')
                 # Save the file system
                 self.save_file(image_url, osp.join(save_dir, upload_time + '_' + image_name + '.jpg'))
-
+                
+                comments = ""
                 if with_comment:
                     comment_elems = self.driver.find_elements_by_xpath(self.image_comments_xpath)
                     if len(comment_elems) > 0:
-                        comments = ""
                         for com_elem in comment_elems:
                             comments += com_elem.text
                             comments += '\n'
@@ -153,25 +197,30 @@ class BackupEngine(object):
                         with open(osp.join(save_dir, upload_time + '_' + image_name + '.txt'), 'w') as w_obj:
                             w_obj.write(comments)
 
+                # NOTE missed
+                crawled_data[image_name] = {
+                    'upload_time': upload_time,
+                    'url': image_url,
+                    'comments': comments,
+                }
+
                 # Process next image
                 j += 1
                 pbar.update(1)
                 if j <= image_num:
                     # Visualize button(next)
                     hl.hover(src_elem)
-                    next_elem = self.driver.find_element_by_xpath(self.next_image_xpath)
+                    next_elem = self.wait_until_by_attr(self.next_image_xpath)
                     # Move to next image
                     hl.click(next_elem)
-                    time.sleep(5)
+                    time.sleep(2)
             
             # Close current image show page
-            close_elem = self.driver.find_element_by_xpath(self.close_image_within_album_xpath)
+            with open(osp.join(save_dir, "total_infos.json"), 'w') as w_obj:
+                json.dump(crawled_data, w_obj)
+            close_elem = self.wait_until_by_attr(self.close_image_within_album_xpath)
             hl.click(close_elem)
-            time.sleep(10)
-        
-
-    def finished(self):
-        hl.kill_browser()
+            time.sleep(5)
 
 
     def download_posts(self):
@@ -181,13 +230,16 @@ class BackupEngine(object):
             os.makedirs(save_dir)
 
         hl.click("说说")
-        time.sleep(15)
-        self.switch_to_frame('app_canvas_frame')
+        # time.sleep(15)
+        # self.switch_to_frame('app_canvas_frame')
+        iframe_elem = self.wait_until_by_attr('app_canvas_frame', attr='id')
+        self.switch_to_frame(iframe_elem.get_attribute('name'))
         
         # NOTE it's weak for the judgement of post ending
         last_page_last_post = ''
         while True:
             current_page_posts = ''
+            self.wait_until_by_attr(self.post_list_xpath)
             post_elems = self.driver.find_elements_by_xpath(self.post_list_xpath)
             for post_elem in post_elems:
                 post = post_elem.text
