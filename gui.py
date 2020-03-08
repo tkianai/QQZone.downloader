@@ -13,6 +13,8 @@ def callback():
     try:
         engine.download_images()
         engine.download_posts()
+        engine.download_leaving_message()
+        engine.download_diary()
     except Exception as e:
         print(e)
     finally:
