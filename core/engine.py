@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 class BackupEngine(object):
 
-    def __init__(self, account, web_brower='chrome', save_dir='./results'):
+    def __init__(self, account, headless=True, web_brower='chrome', save_dir='./results'):
 
         self.base_url = 'https://user.qzone.qq.com'
 
@@ -36,9 +36,9 @@ class BackupEngine(object):
 
         print("Make sure you have logged in qq client!")
         if web_brower == 'chrome':
-            hl.start_chrome(self.base_url)
+            hl.start_chrome(self.base_url, headless=headless)
         elif web_brower == 'firefox':
-            hl.start_firefox()
+            hl.start_firefox(self.base_url, headless=headless)
         else:
             raise "Unsupported web browser: {}".format(web_brower)
         
