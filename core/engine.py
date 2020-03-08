@@ -33,6 +33,16 @@ class BackupEngine(object):
 
         # Post config
         self.post_list_xpath = '//*[@id="msgList"]/li'
+
+        # Leaving msg config
+        self.msg_list_xpath = '//*[@id="ulCommentList"]'
+
+        # Diary config
+        self.diary_pagination_xpath = '//*[@id="pagination"]'
+        self.diary_list_xpath = '//*[@id="listArea"]/ul'
+        self.diary_xpath = '//*[@id="listArea"]/ul/li[{}]/div[1]/span/a'
+        self.diary_content_xpath = '//*[@id="blogDetailDiv"]'
+        self.diary_comment_list_xpath = '//*[@id="commentListDiv"]'
         
 
         self.account = account
@@ -230,13 +240,11 @@ class BackupEngine(object):
             os.makedirs(save_dir)
 
         hl.click("说说")
-        # time.sleep(15)
-        # self.switch_to_frame('app_canvas_frame')
         iframe_elem = self.wait_until_by_attr('app_canvas_frame', attr='id')
         self.switch_to_frame(iframe_elem.get_attribute('name'))
         
         # NOTE it's weak for the judgement of post ending
-        last_page_last_post = ''
+        last_page_posts = ''
         while True:
             current_page_posts = ''
             self.wait_until_by_attr(self.post_list_xpath)
@@ -246,8 +254,8 @@ class BackupEngine(object):
                 post = '\n'.join(post.split('\n')[:-1])
                 current_page_posts += post
                 current_page_posts += '\n' * 3
-            current_page_last_post = post_elems[-1].text
-            if current_page_last_post == last_page_last_post:
+            
+            if current_page_posts == last_page_posts:
                 break
             
             # save to file
@@ -255,13 +263,99 @@ class BackupEngine(object):
                 a_obj.write(current_page_posts)
 
             # update
-            last_page_last_post = current_page_last_post
+            last_page_posts = current_page_posts
             # move to next page
             hl.click("下一页")
             time.sleep(10)
 
     def download_leaving_message(self):
-        pass
 
-    def download_paper(self):
-        pass
+        save_dir = osp.join(self.root_dir, "留言板")
+        if not osp.exists(save_dir):
+            os.makedirs(save_dir)
+
+        hl.click("留言板")
+        iframe_elem = self.wait_until_by_attr('tgb', attr='id')
+        self.switch_to_frame(iframe_elem.get_attribute('name'))
+
+        # NOTE it's weak for the judgement of message board ending
+        last_page_msgs = ''
+        while True:
+            current_page_msgs = ''
+            msg_ul_elem = self.wait_until_by_attr(self.msg_list_xpath)
+            msg_elems = msg_ul_elem.find_elements_by_xpath('li')
+            for msg_elem in msg_elems:
+                msg = msg_elem.text
+                current_page_msgs += msg
+                current_page_msgs += '\n' * 3
+
+            if current_page_msgs == last_page_msgs:
+                break
+
+            # save to file
+            with open(osp.join(save_dir, 'leaving_message.txt'), 'a') as a_obj:
+                a_obj.write(current_page_msgs)
+
+            # update
+            last_page_msgs = current_page_msgs
+            # move to next page
+            hl.click("下一页")
+            time.sleep(10)
+
+
+    def download_diary(self):
+        
+        save_dir = osp.join(self.root_dir, "日志")
+        if not osp.exists(save_dir):
+            os.makedirs(save_dir)
+
+        hl.click("日志")
+        iframe_elem = self.wait_until_by_attr('tblog', attr='id')
+        iframe_name = iframe_elem.get_attribute('name')
+        self.switch_to_frame(iframe_name)
+
+        pag_elem = self.wait_until_by_attr(self.diary_pagination_xpath)
+        pag_number = []
+        for item in pag_elem.text.split(' '):
+            try:
+                n = int(item)
+                pag_number.append(n)
+            except:
+                pass
+        max_page = max(pag_number)
+
+        for _ in range(3, max_page):
+            # process each page
+            diary_ul_elem = self.wait_until_by_attr(self.diary_list_xpath)
+            diary_list_elems = diary_ul_elem.find_elements_by_xpath('li')
+            print("There are {} diaries in current page".format(len(diary_list_elems)))
+
+            titles = []
+            for i in range(len(diary_list_elems)):
+                title_raw = diary_list_elems[i].text.split('\n')[:3]
+                title_raw[-1] = title_raw[-1].split(' ')[0]
+                title = '_'.join(title_raw)
+                title = '_'.join(title.split(' '))
+                titles.append(title)
+
+            for i in tqdm(range(len(titles))):
+                title = titles[i]
+                diary_elem = self.wait_until_by_attr(self.diary_xpath.format(i + 1))
+                hl.click(diary_elem)
+                time.sleep(5)
+                
+                diary_content_elem = self.wait_until_by_attr(self.diary_content_xpath)
+                comment_list = self.driver.find_elements_by_xpath(self.diary_comment_list_xpath)
+                with open(osp.join(save_dir, title + '.txt'), 'w') as w_obj:
+                    w_obj.write(diary_content_elem.text)
+                    if len(comment_list) > 0:
+                        w_obj.write('\n'*3)
+                        w_obj.write(comment_list[0].text)
+
+                self.driver.back()
+                time.sleep(1)
+                self.switch_to_frame(iframe_name)
+
+            # Move to next page
+            hl.click("下一页")
+            time.sleep(5)

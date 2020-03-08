@@ -9,7 +9,7 @@ from core import BackupEngine
 def parse_args():
     parser = argparse.ArgumentParser(description="Back up for QQ Zone")
     parser.add_argument('--account', type=str, default="593014895", help="QQ account")
-    parser.add_argument('--save', type=str, default='./results', help="Directory to save data")
+    parser.add_argument('--save', type=str, default='./QQZone', help="Directory to save data")
 
     args = parser.parse_args()
     if not osp.exists(args.save):
@@ -24,6 +24,8 @@ def main():
     try:
         engine.download_images()
         engine.download_posts()
+        engine.download_leaving_message()
+        engine.download_diary()
     except Exception as e:
         print(e)
     finally:
