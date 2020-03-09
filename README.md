@@ -1,6 +1,7 @@
 # QQZone.downloader
 
-[Chinese version](./README_zh.md)
+[中文版](./README_zh.md)
+
 Tool for downloading images, posts from qq zone
 
 ## Usage
@@ -39,5 +40,5 @@ I am a man who has heart-broken experiences using Tencent products!
 
 ## Welcome pull requests
 
-If this do help you, please star~star~star
+If this do help you, please **star ! star ! star !** Thanks!
 

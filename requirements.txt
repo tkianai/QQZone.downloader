@@ -1,3 +1,4 @@
+altgraph==0.17
 appnope==0.1.0
 autopep8==1.5
 backcall==0.1.0
@@ -12,6 +13,7 @@ ipython-genutils==0.2.0
 jedi==0.16.0
 jupyter-client==6.0.0
 jupyter-core==4.6.3
+macholib==1.14
 parso==0.6.2
 pexpect==4.8.0
 pickleshare==0.7.5
@@ -19,6 +21,7 @@ prompt-toolkit==3.0.3
 ptyprocess==0.6.0
 pycodestyle==2.5.0
 Pygments==2.5.2
+PyInstaller==3.6
 python-dateutil==2.8.1
 pyzmq==19.0.0
 requests==2.23.0

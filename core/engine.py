@@ -20,8 +20,10 @@ class BackupEngine(object):
         self.base_url = 'https://user.qzone.qq.com'
 
         # Album config
+        self.album_global_xpath = '//*[@id="js-nav-container"]/div/div[1]/ul/li[1]/a'
         self.album_list_xpath = '//*[@id="js-album-list-noraml"]/div/div/ul/li'
-        self.album_xpath = '//*[@id="js-album-list-noraml"]/div/div/ul/li[{}]/div/div[2]/div/div[2]/a'
+        #self.album_xpath = '//*[@id="js-album-list-noraml"]/div/div/ul/li[{}]/div/div[2]/div/div[2]/a'
+        self.album_xpath = '//*[@id="js-album-list-noraml"]/div/div/ul/li[{}]/div/div[1]/a'
         self.image_list_xpath = '//*[@id="js-module-container"]/div[1]/div[3]/div[1]/ul/li'
         self.image_xpath = '//*[@id="js-module-container"]/div[1]/div[3]/div[1]/ul/li[{}]/div/div[1]/a'
         self.image_name_xpath = '//*[@id="js-photo-name"]'
@@ -109,13 +111,12 @@ class BackupEngine(object):
             with open(path, 'wb') as w_obj:
                 w_obj.write(r.content)
 
-
-    def switch_to_frame(self, frame_name):
-        if frame_name == 'default':
+    def switch_to_frame(self, frame_id):
+        if frame_id == 'default':
             self.driver.switch_to.default_content()
         else:
-            self.driver.switch_to.frame(frame_name)
-        self.driver_frame = frame_name
+            self.driver.switch_to.frame(frame_id)
+        self.driver_frame = frame_id
 
 
     def download_images(self, with_time=True, with_comment=True):
@@ -126,21 +127,22 @@ class BackupEngine(object):
             with_comment {bool} -- saving with the comments of the image (default: {False})
         """        
         hl.click("相册")
-        iframe_elem = self.wait_until_by_attr('tphoto', attr='id')
-        self.switch_to_frame(iframe_elem.get_attribute('name'))
+        frame_id = 'tphoto'
+        iframe_elem = self.wait_until_by_attr(frame_id, attr='id')
+        self.switch_to_frame(frame_id)
         self.wait_until_by_attr(self.album_list_xpath)
         album_elems = self.driver.find_elements_by_xpath(self.album_list_xpath)
         album_num = len(album_elems)
         print("There are {} albums to be downloaded!".format(album_num))
 
         # For each album
-        for i in range(1, album_num + 1):
+        for i in range(9, album_num + 1):
             # return to album list page
             if i != 1:
-                hl.click("相册")
+                elem = self.wait_until_by_attr(self.album_global_xpath)
+                hl.click(elem)
             album_xpath = self.album_xpath.format(i)
             album_elem = self.wait_until_by_attr(album_xpath)
-            # album_elem = self.driver.find_element_by_xpath(album_xpath)
             title = album_elem.get_attribute('title')
             save_dir = osp.join(self.root_dir, "相册", title)
             if not osp.exists(save_dir):
@@ -159,11 +161,16 @@ class BackupEngine(object):
                     hl.scroll_down(10)
                     print("scrolling down...")
                     trial_times += 1
-            # time.sleep(5)
-            self.wait_until_by_attr(self.image_list_xpath)
+            try:
+                self.wait_until_by_attr(self.image_list_xpath)
+            except:
+                pass
             image_elems = self.driver.find_elements_by_xpath(self.image_list_xpath)
             image_num = len(image_elems)
             print("There are {} images in {} album".format(image_num, title))
+            if image_num == 0:
+                continue
+            continue
 
             # Start from the first image
             crawled_data = {}
@@ -173,7 +180,6 @@ class BackupEngine(object):
                 if j == 1:
                     # Find the first image
                     image_xpath = self.image_xpath.format(j)
-                    # image_elem = self.driver.find_element_by_xpath(image_xpath)
                     image_elem = self.wait_until_by_attr(image_xpath)
                     hl.click(image_elem)
                     time.sleep(2)
@@ -188,7 +194,7 @@ class BackupEngine(object):
 
                 # Find image name
                 name_elem = self.wait_until_by_attr(self.image_name_xpath)
-                image_name = name_elem.get_attribute('innerHTML')
+                image_name = str(hash(name_elem.get_attribute('innerHTML') + str(time.time())))
                 # Find image url
                 src_elem = self.wait_until_by_attr(self.image_src_xpath)
                 image_url = src_elem.get_attribute('src')
@@ -240,8 +246,9 @@ class BackupEngine(object):
             os.makedirs(save_dir)
 
         hl.click("说说")
-        iframe_elem = self.wait_until_by_attr('app_canvas_frame', attr='id')
-        self.switch_to_frame(iframe_elem.get_attribute('name'))
+        frame_id = 'app_canvas_frame'
+        iframe_elem = self.wait_until_by_attr(frame_id, attr='id')
+        self.switch_to_frame(frame_id)
         
         # NOTE it's weak for the judgement of post ending
         last_page_posts = ''
@@ -275,8 +282,9 @@ class BackupEngine(object):
             os.makedirs(save_dir)
 
         hl.click("留言板")
-        iframe_elem = self.wait_until_by_attr('tgb', attr='id')
-        self.switch_to_frame(iframe_elem.get_attribute('name'))
+        frame_id = 'tgb'
+        iframe_elem = self.wait_until_by_attr(frame_id, attr='id')
+        self.switch_to_frame(frame_id)
 
         # NOTE it's weak for the judgement of message board ending
         last_page_msgs = ''
@@ -310,9 +318,9 @@ class BackupEngine(object):
             os.makedirs(save_dir)
 
         hl.click("日志")
-        iframe_elem = self.wait_until_by_attr('tblog', attr='id')
-        iframe_name = iframe_elem.get_attribute('name')
-        self.switch_to_frame(iframe_name)
+        frame_id = 'tblog'
+        iframe_elem = self.wait_until_by_attr(frame_id, attr='id')
+        self.switch_to_frame(frame_id)
 
         pag_elem = self.wait_until_by_attr(self.diary_pagination_xpath)
         pag_number = []
@@ -354,7 +362,7 @@ class BackupEngine(object):
 
                 self.driver.back()
                 time.sleep(1)
-                self.switch_to_frame(iframe_name)
+                self.switch_to_frame(frame_id)
 
             # Move to next page
             hl.click("下一页")
