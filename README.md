@@ -1,5 +1,6 @@
 # QQZone.downloader
 
+[Chinese version](./README_zh.md)
 Tool for downloading images, posts from qq zone
 
 ## Usage
@@ -29,7 +30,7 @@ Tool for downloading images, posts from qq zone
 - [x] Add new features, such as downloading image with upload time, comments and downloading posts
 - [x] Add function for leaving message and diary
 - [x] Build gui
-- [ ] Build exe
+- [x] Build exe
 
 
 ## Acknowledgement
