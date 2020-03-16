@@ -22,8 +22,7 @@ class BackupEngine(object):
         # Album config
         self.album_global_xpath = '//*[@id="js-nav-container"]/div/div[1]/ul/li[1]/a'
         self.album_list_xpath = '//*[@id="js-album-list-noraml"]/div/div/ul/li'
-        #self.album_xpath = '//*[@id="js-album-list-noraml"]/div/div/ul/li[{}]/div/div[2]/div/div[2]/a'
-        self.album_xpath = '//*[@id="js-album-list-noraml"]/div/div/ul/li[{}]/div/div[1]/a'
+        self.album_xpath = '//*[@id="js-album-list-noraml"]/div/div/ul/li[{}]/div/div[2]/div/div[2]/a'
         self.image_list_xpath = '//*[@id="js-module-container"]/div[1]/div[3]/div[1]/ul/li'
         self.image_xpath = '//*[@id="js-module-container"]/div[1]/div[3]/div[1]/ul/li[{}]/div/div[1]/a'
         self.image_name_xpath = '//*[@id="js-photo-name"]'
@@ -31,6 +30,7 @@ class BackupEngine(object):
         self.next_image_xpath = '//*[@id="js-btn-nextPhoto"]'
         self.image_upload_time_xpath = '//*[@id="_slideView_userinfo"]/div/div/p'
         self.image_comments_xpath = '//*[@id="js-comment-module"]/div/div/div/ul/li'
+        self.image_last_xpath = '//*[@id="js-recom-closeBtn"]'
         self.close_image_within_album_xpath = '//*[@id="js-viewer-main"]/div[1]/a'
 
         # Post config
@@ -130,17 +130,21 @@ class BackupEngine(object):
         frame_id = 'tphoto'
         iframe_elem = self.wait_until_by_attr(frame_id, attr='id')
         self.switch_to_frame(frame_id)
+        for _ in range(10):
+            self.driver.execute_script('document.documentElement.scrollTop=10000')
+            time.sleep(0.5)
         self.wait_until_by_attr(self.album_list_xpath)
         album_elems = self.driver.find_elements_by_xpath(self.album_list_xpath)
         album_num = len(album_elems)
         print("There are {} albums to be downloaded!".format(album_num))
 
         # For each album
-        for i in range(9, album_num + 1):
+        for i in range(1, album_num + 1):
             # return to album list page
             if i != 1:
                 elem = self.wait_until_by_attr(self.album_global_xpath)
                 hl.click(elem)
+            
             album_xpath = self.album_xpath.format(i)
             album_elem = self.wait_until_by_attr(album_xpath)
             title = album_elem.get_attribute('title')
@@ -167,16 +171,13 @@ class BackupEngine(object):
                 pass
             image_elems = self.driver.find_elements_by_xpath(self.image_list_xpath)
             image_num = len(image_elems)
-            print("There are {} images in {} album".format(image_num, title))
             if image_num == 0:
                 continue
-            continue
 
             # Start from the first image
             crawled_data = {}
             j = 1 
-            pbar = tqdm(total=image_num)
-            while j <= image_num:
+            while True:
                 if j == 1:
                     # Find the first image
                     image_xpath = self.image_xpath.format(j)
@@ -221,15 +222,22 @@ class BackupEngine(object):
                 }
 
                 # Process next image
+                # Visualize button(next)
+                hl.hover(src_elem)
+                next_elem = self.wait_until_by_attr(self.next_image_xpath)
+                # Move to next image
+                hl.click(next_elem)
+                time.sleep(2)
+
+                last_elems = self.driver.find_elements_by_xpath(self.image_last_xpath)
+                if len(last_elems) > 0:
+                    hl.click(last_elems[0])
+                    time.sleep(1)
+                    break
+
                 j += 1
-                pbar.update(1)
-                if j <= image_num:
-                    # Visualize button(next)
-                    hl.hover(src_elem)
-                    next_elem = self.wait_until_by_attr(self.next_image_xpath)
-                    # Move to next image
-                    hl.click(next_elem)
-                    time.sleep(2)
+
+            print("There are {} images in {}".format(j, title))
             
             # Close current image show page
             with open(osp.join(save_dir, "total_infos.json"), 'w') as w_obj:

@@ -32,6 +32,8 @@ Tool for downloading images, posts from qq zone
 - [x] Add function for leaving message and diary
 - [x] Build gui
 - [x] Build exe
+- [x] Cannot handle many many images in that album
+- [ ] Cannot handle specific albums such as `旅游相册`
 
 
 ## Acknowledgement
