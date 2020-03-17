@@ -22,8 +22,11 @@ class BackupEngine(object):
         # Album config
         self.album_global_xpath = '//*[@id="js-nav-container"]/div/div[1]/ul/li[1]/a'
         self.album_list_xpath = '//*[@id="js-album-list-noraml"]/div/div/ul/li'
-        self.album_xpath = '//*[@id="js-album-list-noraml"]/div/div/ul/li[{}]/div/div[2]/div/div[2]/a'
+        self.album_xpath1 = '//*[@id="js-album-list-noraml"]/div/div/ul/li[{}]/div/div[2]/div/div[2]/a'
+        self.album_xpath2 = '//*[@id="js-album-list-noraml"]/div/div/ul/li[{}]/div/div[1]/a'
         self.image_list_xpath = '//*[@id="js-module-container"]/div[1]/div[3]/div[1]/ul/li'
+        # travel ablum
+        self.travel_image_list_xpath = '//*[@id="j-photo-list"]/div[1]/div[4]/ul/li'
         self.image_xpath = '//*[@id="js-module-container"]/div[1]/div[3]/div[1]/ul/li[{}]/div/div[1]/a'
         self.image_name_xpath = '//*[@id="js-photo-name"]'
         self.image_src_xpath = '//*[@id="js-img-border"]/img'
@@ -145,9 +148,14 @@ class BackupEngine(object):
                 elem = self.wait_until_by_attr(self.album_global_xpath)
                 hl.click(elem)
             
-            album_xpath = self.album_xpath.format(i)
-            album_elem = self.wait_until_by_attr(album_xpath)
-            title = album_elem.get_attribute('title')
+            try:
+                album_xpath = self.album_xpath1.format(i)
+                album_elem = self.wait_until_by_attr(album_xpath)
+                title = album_elem.get_attribute('title')
+            except:
+                album_xpath = self.album_xpath2.format(i)
+                album_elem = self.wait_until_by_attr(album_xpath)
+                title = "第{}个相册".format(i)
             save_dir = osp.join(self.root_dir, "相册", title)
             if not osp.exists(save_dir):
                 os.makedirs(save_dir)
@@ -162,7 +170,8 @@ class BackupEngine(object):
                     hl.click(album_elem)
                     enter_success = True
                 except :
-                    hl.scroll_down(10)
+                    hl.scroll_down(40)
+                    album_elem = self.wait_until_by_attr(album_xpath)
                     print("scrolling down...")
                     trial_times += 1
             try:
@@ -172,22 +181,28 @@ class BackupEngine(object):
             image_elems = self.driver.find_elements_by_xpath(self.image_list_xpath)
             image_num = len(image_elems)
             if image_num == 0:
-                continue
+                # For travel album
+                travel_elems = self.driver.find_elements_by_xpath(self.travel_image_list_xpath)
+                if len(travel_elems) > 0:
+                    print("This is a travel album...")
+                    image_elem = travel_elems[0]
+                else:
+                    continue
+            else:
+                # Find the first image
+                image_xpath = self.image_xpath.format(1)
+                image_elem = self.wait_until_by_attr(image_xpath)
+
+            hl.click(image_elem)
+            time.sleep(2)
+
+            # Change driver frame
+            self.switch_to_frame('default')
 
             # Start from the first image
             crawled_data = {}
             j = 1 
             while True:
-                if j == 1:
-                    # Find the first image
-                    image_xpath = self.image_xpath.format(j)
-                    image_elem = self.wait_until_by_attr(image_xpath)
-                    hl.click(image_elem)
-                    time.sleep(2)
-
-                    # Change driver frame
-                    self.switch_to_frame('default')
-                
                 upload_time = ''
                 if with_time:
                     upload_time_elem = self.wait_until_by_attr(self.image_upload_time_xpath)
@@ -245,6 +260,7 @@ class BackupEngine(object):
             close_elem = self.wait_until_by_attr(self.close_image_within_album_xpath)
             hl.click(close_elem)
             time.sleep(5)
+            self.switch_to_frame(frame_id)
 
 
     def download_posts(self):
