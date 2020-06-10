@@ -8,7 +8,7 @@ from core import BackupEngine
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Back up for QQ Zone")
-    parser.add_argument('--account', type=str, default="593014895", help="QQ account")
+    parser.add_argument('--account', type=str, help="QQ account")
     parser.add_argument('--save', type=str, default='./QQZone', help="Directory to save data")
     parser.add_argument('--visual', action='store_true', help="Not use headless mode")
 
