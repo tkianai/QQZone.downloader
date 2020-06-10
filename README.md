@@ -38,7 +38,7 @@ Tool for downloading images, posts from qq zone
 
 ## Acknowledgement
 
-I am a man who has heart-broken experiences using Tencent products!
+Bling bling...
 
 ## Welcome pull requests
 
