@@ -8,7 +8,7 @@ decorator==4.4.2
 helium==3.0.1
 idna==2.9
 ipykernel==5.1.4
-ipython==7.13.0
+ipython==7.16.3
 ipython-genutils==0.2.0
 jedi==0.16.0
 jupyter-client==6.0.0
