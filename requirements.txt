@@ -2,7 +2,7 @@ altgraph==0.17
 appnope==0.1.0
 autopep8==1.5
 backcall==0.1.0
-certifi==2019.11.28
+certifi==2022.12.7
 chardet==3.0.4
 decorator==4.4.2
 helium==3.0.1
